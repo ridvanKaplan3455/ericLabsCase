@@ -2,7 +2,7 @@ const {Given, When, Then }  = require ("@cucumber/cucumber");
 const {chromium} = require('@playwright/test')
 const { expect } = require('@playwright/test');
 const fs = require("fs");
-const { faker, AnimalModule } = require('@faker-js/faker');
+const { faker } = require('@faker-js/faker');
 
 let browser;
 let page;
@@ -10,8 +10,14 @@ let page;
 const config = JSON.parse(fs.readFileSync("datas.json"));
 
 Given('Kullanici {string} adresine gider', async function (urlParam) {
-    browser = await chromium.launch({headless : false});
-    page = await browser.newPage();
+    browser = await chromium.launch({
+        headless : false,
+        args: ['--start-maximized']});
+
+        const context = await browser.newContext({
+        viewport: null // Varsayılan görünüm ayarlarını kullan
+    });
+    page = await context.newPage();
 
     // JSON dosyasındaki URL'yi kullan
     const url = config[urlParam];
@@ -23,7 +29,7 @@ Given('Kullanici {string} adresine gider', async function (urlParam) {
     await page.goto(url);
     this.page = page;    
 
-    console.log("SUCCESSFUL! Message: ")
+    console.log("SUCCESSFUL! Message: " + url + " adresine gidildi!")
   });  
 
 When('Kullanici varsa {string} objesine tiklar', async function (string) {
@@ -33,17 +39,17 @@ When('Kullanici varsa {string} objesine tiklar', async function (string) {
         const modalCloseButton = page.locator(locator);
         if (await modalCloseButton.isVisible()) {
             await modalCloseButton.click();
+            console.log( string +" elementi var ve tiklandi!");
         }
     } catch (error) {
-        console.log("Modal close butonu bulunamadı, devam ediliyor");
-    }
-  
+        console.log("Modal close butonu bulunamadi, devam ediliyor");
+    }  
 })
 
 When('Kullanici {string} objesine tiklar', async function (string) {
     const locator = config[string];
-    await page.click(locator);    
-  
+    await page.click(locator);
+    console.log( string +" elementine tiklandi!");  
 })
 
 When('Kullanici {string} ilk objesine tiklar', async function (string) {
@@ -55,13 +61,14 @@ When('Kullanici {string} ilk objesine tiklar', async function (string) {
     // Elementin görünür olmasını bekle ve sonra tıkla
     const element = page.locator(locator).first();
     await element.waitFor({ state: 'visible' });
-    await element.click();    
-  
+    await element.click();
+    console.log( string +" ilk elementine tiklandi!");  
 })
 
 When('Kullanici sayfanin yuklenmesini bekler', async function () {
     
      await page.waitForLoadState();
+     console.log( "Sayfa yuklenmesi beklendi!");
 })
 
 When('Kullanici acilan yeni sekmeye odaklanir', async function () {
@@ -71,6 +78,7 @@ When('Kullanici acilan yeni sekmeye odaklanir', async function () {
     page = newPage;
     // Yeni sayfanın yüklenmesini bekle
     await page.waitForLoadState();
+    console.log( "Yeni sekmeye gecildi!");
 })
 
 When('Kullanici {string} saniye bekler', async function(saniye) {
@@ -79,6 +87,7 @@ When('Kullanici {string} saniye bekler', async function(saniye) {
     
     // Playwright'in page.waitForTimeout metodunu kullanarak bekleme işlemini gerçekleştiriyoruz
     await page.waitForTimeout(beklemeZamani);
+    console.log( saniye + " sn. bekleme yapildi !");
 });
 When('Kullanici {string} ikinci objesine tiklar', async function (string) {
     const locator = config[string];
@@ -89,7 +98,8 @@ When('Kullanici {string} ikinci objesine tiklar', async function (string) {
     // Elementin görünür olmasını bekle ve sonra tıkla
     const element = page.locator(locator).nth(1); // .first() yerine .nth(1) kullanıyoruz
     await element.waitFor({ state: 'visible' });
-    await element.click();  
+    await element.click();
+    console.log( string +" ikinci elementine tiklandi!");  
 })
 Then('Kullanici eski sekmeye doner', async function() {
     // Tüm açık sekmeleri al
@@ -114,6 +124,7 @@ When('Kullanici {string} adresiine gider', async function (urlParam) {
      const elementLocator = config[element];        
      const elementHandle = await page.locator(elementLocator);
      await expect(elementHandle).toHaveText(expectedText);
+     console.log( element  +" objesinin degerinin " + expectedText + " oldugu dogrulandi!");
 });
 When('Kullanici {string} objesinin degerininin {string} objesinin degerine esit oldugunu dogrular', async function (urunFiyatiLocator, toplamTutarLocator) {
     // Locator'ları config'den al
@@ -127,6 +138,7 @@ When('Kullanici {string} objesinin degerininin {string} objesinin degerine esit 
     const temizToplamTutar = toplamTutar.replace('Toplam', '').replace(/[^0-9,]/g, '').trim();
     // Değerleri karşılaştır
     expect(temizUrunFiyati).toBe(temizToplamTutar);
+    console.log( urunFiyatiLocator +" objesinin degeri " + urunFiyati + " nin " + toplamTutarLocator + " objesinin degeri " + toplamTutar + " e esit oldugu dogrulandi!" );
 });
 
 When('Kullanici {string} objesini dummy email ile doldurur', async function (inputLocator) {
@@ -217,4 +229,5 @@ When('Kullanici {string} objesini dummy adres basligi ile doldurur', async funct
 })
 When('Kullanici tarayiciyi kapatir', async function () {
     await browser.close();
+    console.log( "Tarayici kapatildi, test basarili!");
 })
